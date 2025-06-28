@@ -150,6 +150,81 @@ book-service/
 └── UserGuide.md                  # This comprehensive documentation
 ```
 
+book-service/
+├── .git/ # Git version control
+├── logs/ # Application logging system
+│ ├── errors/ # Error-specific logs by date
+│ │ ├── error-2025-03-20.log
+│ │ ├── error-2025-03-21.log
+│ │ └── ...
+│ ├── combined.log # All logs combined
+│ └── error.log # General error log
+│
+├── src/
+│ ├── config/ # Configuration management
+│ │ ├── config.js # Main application config
+│ │ └── database.js # Database connection config
+│ │
+│ ├── controllers/ # HTTP request handlers
+│ │ └── index.js # Controller exports
+│ │
+│ ├── data-access/ # Database abstraction layer
+│ │ └── sequelize/ # Sequelize ORM implementation
+│ │ ├── config/
+│ │ │ └── config.js # Sequelize configuration
+│ │ ├── migrations/ # Database schema migrations
+│ │ │ └── ...
+│ │ ├── models/ # Sequelize model definitions
+│ │ │ └── index.js # Model exports
+│ │ └── seeders/ # Database seed data
+│ │
+│ ├── database/ # Database connection management
+│ │ └── database.js
+│ │
+│ ├── logger/ # Centralized logging system
+│ │ └── logger.js
+│ │
+│ ├── middlewares/ # Express middleware components
+│ │ ├── auth.middleware.js # JWT verification & authentication
+│ │ ├── role.middleware.js # Role-based access control
+│ │ ├── globalError.middleware.js # Global error handling
+│ │ ├── validate.middleware.js # Request validation
+│ │ └── index.js # Middleware exports
+│ │
+│ ├── repositories/ # Data access layer
+│ │ └── index.js # Repository exports
+│ │
+│ ├── services/ # Business logic services
+│ │ └── index.js # Service exports
+│ │
+│ ├── shared/ # Shared utilities
+│ │ └── utils/
+│ │ └── ErrorHandler.js # Custom error handling
+│ │
+│ ├── use-cases/ # Business use cases
+│ │ └── index.js # Use case exports
+│ │
+│ ├── validators/ # Request validation schemas
+│ │ └── index.js
+│ │
+│ ├── webserver/ # Express application setup
+│ │ ├── routes/ # API route definitions
+│ │ └── express-app.js # Express app configuration
+│ │
+│ ├── const.js # Application constants
+│ └── server.js # Application entry point
+│
+├── tests/ # Test files directory
+├── .env # Environment variables
+├── .gitignore # Git ignore rules
+├── .sequelizerc # Sequelize configuration
+├── package.json # Node.js dependencies
+├── package-lock.json # Dependency lock file
+├── README.md # Project overview documentation
+└── UserGuide.md # This comprehensive documentation
+
+````
+
 ## 🔍 Core Components Deep Dive
 
 ### 1. **Enhanced Configuration System (`/src/config`)**
@@ -162,7 +237,7 @@ The configuration system manages application settings, database connections, and
 // AWS S3 configuration for covers and certificates
 // Stripe payment processing configuration
 // Text processing and formatting settings
-```
+````
 
 **Key Features:**
 
@@ -232,7 +307,6 @@ Advanced file management with:
 ### Core Features Implemented
 
 1. **📝 Text-Based Book Content Management**
-
    - Direct text input from frontend interfaces
    - Rich text formatting and structure preservation
    - Real-time content validation and sanitization
@@ -240,7 +314,6 @@ Advanced file management with:
    - Search-optimized text storage
 
 2. **🔖 ISBN Certificate Upload & Management**
-
    - Secure certificate file upload (PDF, images)
    - Metadata capture (ISBN number, issue date, authority)
    - Certificate validation and verification
@@ -248,7 +321,6 @@ Advanced file management with:
    - Access control and download management
 
 3. **🎨 Cover Design Upload & Information Management**
-
    - Professional cover image upload (multiple formats)
    - Designer information and contact details
    - Design description and concept notes
@@ -256,7 +328,6 @@ Advanced file management with:
    - High-resolution storage with thumbnail generation
 
 4. **🏭 Multi-Channel Publishing Workflow**
-
    - Traditional publishing with review processes
    - Self-publishing with automated validation
    - Digital-first publishing workflows
@@ -264,7 +335,6 @@ Advanced file management with:
    - Multi-format export capabilities
 
 5. **💰 E-commerce & Payment Processing**
-
    - Stripe payment integration with webhooks
    - Digital and physical book sales
    - Purchase verification for content access
@@ -495,11 +565,34 @@ npm install
 cp .env.example .env
 # Edit .env with your configuration
 
+# Create databases
+createdb bookservice_dev
+createdb bookservice_test
+
 # Run database migrations
 npx sequelize-cli db:migrate
 
 # Start the application
 npm start
+```
+
+### Database Setup Commands
+
+```bash
+# Check migration status
+npx sequelize-cli db:migrate:status
+
+# Run migrations
+npx sequelize-cli db:migrate
+
+# Undo last migration (if needed)
+npx sequelize-cli db:migrate:undo
+
+# Run seeders (if available)
+npx sequelize-cli db:seed:all
+
+# For test environment
+NODE_ENV=test npx sequelize-cli db:migrate
 ```
 
 ### Environment Configuration
