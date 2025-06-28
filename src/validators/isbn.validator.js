@@ -5,7 +5,7 @@ const Joi = require("joi");
  */
 
 // ISBN-13 format validation regex
-const isbn13Regex = /^978-\d{1}-\d{5}-\d{3}-\d{1}$/;
+const isbn13Regex = /^978-\d{1}-\d{3}-\d{5}-\d{1}$/;
 
 // ISBN-10 format validation regex
 const isbn10Regex = /^\d{1}-\d{5}-\d{3}-[\dX]$/;
