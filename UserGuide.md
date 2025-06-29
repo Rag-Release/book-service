@@ -25,7 +25,7 @@ The Book Service forms the backbone of our comprehensive publishing platform eco
 
 - **📝 Text-Based Book Content Management**: Direct text input from frontend with rich formatting and structured database storage
 - **🔖 ISBN Certificate Upload & Management**: Upload and manage ISBN certificates and related documentation with metadata
-- **🎨 Cover Design Upload & Information**: Upload cover designs with detailed information, descriptions, and designer notes
+- **🎨 Cover Design Upload & Management**: Upload cover designs with detailed information, descriptions, and designer notes
 - **🏭 Multi-Channel Publishing**: Support for both traditional print and digital self-publishing workflows
 - **💰 E-commerce Integration**: Secure payment processing via Stripe with comprehensive order management
 - **⭐ Reader Engagement Platform**: Review and rating system with purchase verification
@@ -321,11 +321,15 @@ Advanced file management with:
    - Access control and download management
 
 3. **🎨 Cover Design Upload & Information Management**
-   - Professional cover image upload (multiple formats)
-   - Designer information and contact details
-   - Design description and concept notes
-   - Version tracking for design iterations
-   - High-resolution storage with thumbnail generation
+   - Professional cover image upload with multiple format support (JPEG, PNG, WebP, TIFF)
+   - Comprehensive designer information capture (name, email, portfolio)
+   - Detailed design information including concept, color scheme, and style
+   - Designer notes and target audience specification
+   - Version tracking for design iterations with approval workflow
+   - High-resolution storage with automatic thumbnail generation
+   - Cover design approval and rejection system with detailed feedback
+   - Active cover selection for published books
+   - Designer portfolio management and design history tracking
 
 4. **🏭 Multi-Channel Publishing Workflow**
    - Traditional publishing with review processes
@@ -647,6 +651,19 @@ ENABLE_RICH_TEXT=true
 - `POST /api/books/{id}/isbn-certificate` - Upload ISBN certificate (Author/Admin)
 - `GET /api/books/{id}/isbn-certificate` - Get ISBN certificate and details
 
+#### Cover Design Management
+
+- `POST /api/books/{id}/covers` - Upload cover design with designer information
+- `GET /api/books/{id}/covers` - Get all cover designs for a book
+- `GET /api/books/{id}/covers/active` - Get active cover design
+- `GET /api/books/{id}/covers/history` - Get version history of covers
+- `GET /api/cover-designs/{id}` - Get specific cover design details
+- `PUT /api/cover-designs/{id}` - Update cover design information
+- `POST /api/cover-designs/{id}/approve` - Approve cover design (Admin/Publisher)
+- `POST /api/cover-designs/{id}/reject` - Reject cover design with reason
+- `POST /api/books/{id}/covers/{designId}/activate` - Set cover as active
+- `DELETE /api/cover-designs/{id}` - Delete cover design
+
 #### Publishing & Content Workflow
 
 - `POST /api/books/{id}/publish` - Publish book content (Author/Admin)
@@ -671,14 +688,20 @@ curl -X POST "http://localhost:4000/api/books" \
     "publishingMethod": "DIGITAL"
   }'
 
-# 2. Upload cover with designer information
-curl -X POST "http://localhost:4000/api/books/123/cover" \
+# 2. Upload cover with comprehensive designer information
+curl -X POST "http://localhost:4000/api/books/123/covers" \
   -H "Authorization: Bearer <designer_token>" \
   -F "cover=@sci_fi_cover.jpg" \
   -F "designerName=Alex Johnson" \
   -F "designerEmail=alex@designs.com" \
-  -F "description=Futuristic cyberpunk-inspired cover design" \
-  -F "designConcept=Dark background with neon accents representing digital world"
+  -F "designerPortfolio=https://alexdesigns.com" \
+  -F "title=Cyberpunk Adventure Cover" \
+  -F "description=Futuristic cyberpunk-inspired cover design with neon elements" \
+  -F "designConcept=Dark background with neon accents representing digital world transformation" \
+  -F "colorScheme=Dark blue, electric blue, neon green" \
+  -F "style=Cyberpunk, Futuristic" \
+  -F "targetAudience=Science fiction readers, cyberpunk enthusiasts" \
+  -F "designNotes=High contrast design optimized for both digital and print formats"
 
 # 3. Upload ISBN certificate
 curl -X POST "http://localhost:4000/api/books/123/isbn-certificate" \
