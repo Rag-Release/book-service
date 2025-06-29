@@ -26,6 +26,24 @@ npx sequelize-cli db:migrate
 
 # Run seeders (if any)
 npx sequelize-cli db:seed:all
+
+# 1. Drop database and start fresh with correct naming
+npx sequelize-cli db:drop
+npx sequelize-cli db:create
+
+# 2. Remove any inconsistent migration files
+rm -f /home/ifham/Rag\ Release/Dev/rag-release-be/book-service/src/data-access/sequelize/migrations/*Users*
+rm -f /home/ifham/Rag\ Release/Dev/rag-release-be/book-service/src/data-access/sequelize/migrations/*BookFiles*
+
+# 3. Run migrations in correct order
+npx sequelize-cli db:migrate
+
+# 4. Test models
+node -e "
+const db = require('./src/data-access/sequelize/models');
+console.log('Models loaded:', Object.keys(db));
+console.log('✅ All fixed!');
+"
 ```
 
 ### Environment Variables
