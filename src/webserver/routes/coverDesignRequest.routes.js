@@ -43,7 +43,7 @@ router.get(
   "/designer/cover-requests",
   authMiddleware,
   roleMiddleware(["DESIGNER", "ADMIN"]),
-  validateMiddleware(coverDesignRequestValidators.getAuthorRequests),
+  validateMiddleware(coverDesignRequestValidators.getDesignerRequests),
   coverDesignRequestController.getDesignerRequests
 );
 
