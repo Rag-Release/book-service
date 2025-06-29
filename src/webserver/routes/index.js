@@ -8,6 +8,8 @@ const express = require("express");
 // const coversRoutes = require("./covers.routes");
 const coverDesignRoutes = require("./coverDesign.routes");
 const coverDesignRequestRoutes = require("./coverDesignRequest.routes");
+const isbnCertificateRoutes = require("./isbnCertificate.routes");
+const isbnRequestRoutes = require("./isbnRequest.routes");
 
 const router = express.Router();
 
@@ -17,6 +19,8 @@ const router = express.Router();
 // router.use("/orders", orderRoutes);
 router.use("/cover-design", coverDesignRoutes);
 router.use("/cover-design-request", coverDesignRequestRoutes);
+router.use("/isbn-certificate", isbnCertificateRoutes);
+router.use("/isbn-request", isbnRequestRoutes);
 
 // API documentation route
 router.get("/", (req, res) => {
