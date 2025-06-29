@@ -3,123 +3,91 @@ const { Model } = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
   class Book extends Model {
-    /**
-     * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
-     * The `models/index` file will call this method automatically.
-     */
     static associate(models) {
-      // Book belongs to User (author)
-      Book.belongsTo(models.User, {
-        foreignKey: "author_id",
-        as: "author",
-      });
+      // Book belongs to an author (User)
+      if (models.User) {
+        Book.belongsTo(models.User, {
+          foreignKey: "authorId",
+          as: "author",
+        });
+      }
 
-      // Define associations with snake_case foreign keys to match database
-      Book.hasMany(models.BookFile, {
-        foreignKey: "book_id",
-        as: "files",
-      });
+      // Book has many cover designs
+      if (models.CoverDesign) {
+        Book.hasMany(models.CoverDesign, {
+          foreignKey: "bookId",
+          as: "coverDesigns",
+        });
+      }
 
-      Book.hasMany(models.Review, {
-        foreignKey: "book_id",
-        as: "reviews",
-      });
+      // Book has many reviews
+      if (models.Review) {
+        Book.hasMany(models.Review, {
+          foreignKey: "bookId",
+          as: "reviews",
+        });
+      }
 
-      Book.hasMany(models.PaymentRecord, {
-        foreignKey: "book_id",
-        as: "purchases",
-      });
-
-      Book.hasMany(models.ISBNCertificate, {
-        foreignKey: "book_id",
-        as: "isbn_certificates",
-      });
+      // Book has many payment records
+      if (models.PaymentRecord) {
+        Book.hasMany(models.PaymentRecord, {
+          foreignKey: "bookId",
+          as: "paymentRecords",
+        });
+      }
     }
 
     // Instance methods
-    async getCoverFile() {
-      const BookFile = sequelize.models.BookFile;
-      return await BookFile.findOne({
-        where: {
-          book_id: this.id,
-          file_type: "COVER",
-        },
-      });
-    }
-
-    async getCertificateFile() {
-      const BookFile = sequelize.models.BookFile;
-      return await BookFile.findOne({
-        where: {
-          book_id: this.id,
-          file_type: "ISBN_CERTIFICATE",
-        },
-      });
-    }
-
-    async getActiveISBNCertificate() {
-      const ISBNCertificate = sequelize.models.ISBNCertificate;
-      return await ISBNCertificate.findOne({
-        where: {
-          book_id: this.id,
-          is_active: true,
-          verification_status: "VERIFIED",
-        },
-        order: [["created_at", "DESC"]],
-      });
-    }
-
-    async getAverageRating() {
-      const Review = sequelize.models.Review;
-      const result = await Review.findOne({
-        where: { book_id: this.id },
-        attributes: [
-          [sequelize.fn("AVG", sequelize.col("rating")), "average"],
-          [sequelize.fn("COUNT", sequelize.col("id")), "total"],
-        ],
-        raw: true,
-      });
-
+    getPublicInfo() {
       return {
-        average: parseFloat(result.average) || 0,
-        total: parseInt(result.total) || 0,
-      };
-    }
-
-    hasValidISBN() {
-      return this.isbn && this.isbn_assigned;
-    }
-
-    canBePublished() {
-      return (
-        this.status === "APPROVED" &&
-        this.content &&
-        this.title &&
-        (!this.requires_isbn || this.hasValidISBN())
-      );
-    }
-
-    toPublicJSON() {
-      const publicData = {
         id: this.id,
         title: this.title,
         synopsis: this.synopsis,
         genre: this.genre,
         status: this.status,
-        cover_url: this.cover_url,
+        price: this.price,
+        publishingMethod: this.publishingMethod,
+        publishedAt: this.publishedAt,
+        averageRating: this.averageRating,
+        totalReviews: this.totalReviews,
+        createdAt: this.createdAt,
+        updatedAt: this.updatedAt,
+      };
+    }
+
+    getFullInfo() {
+      return {
+        id: this.id,
+        authorId: this.authorId,
+        title: this.title,
+        content: this.content,
+        synopsis: this.synopsis,
+        genre: this.genre,
+        status: this.status,
+        coverUrl: this.coverUrl,
+        certificateUrl: this.certificateUrl,
         isbn: this.isbn,
         price: this.price,
-        publishing_method: this.publishing_method,
-        published_at: this.published_at,
+        publishingMethod: this.publishingMethod,
+        publishedAt: this.publishedAt,
+        averageRating: this.averageRating,
+        totalReviews: this.totalReviews,
+        totalSales: this.totalSales,
+        createdAt: this.createdAt,
+        updatedAt: this.updatedAt,
       };
+    }
 
-      // Only include content excerpt for published books
-      if (this.status === "PUBLISHED" && this.content) {
-        publicData.excerpt = this.content.substring(0, 500) + "...";
-      }
+    isPublished() {
+      return this.status === "PUBLISHED";
+    }
 
-      return publicData;
+    isDraft() {
+      return this.status === "DRAFT";
+    }
+
+    canBeEdited() {
+      return ["DRAFT", "REJECTED"].includes(this.status);
     }
   }
 
@@ -130,16 +98,24 @@ module.exports = (sequelize, DataTypes) => {
         primaryKey: true,
         autoIncrement: true,
       },
-      author_id: {
+      authorId: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        validate: {
+          notNull: { msg: "Author ID is required" },
+          isInt: { msg: "Author ID must be an integer" },
+        },
       },
       title: {
         type: DataTypes.STRING,
         allowNull: false,
         validate: {
-          notEmpty: true,
-          len: [1, 255],
+          notNull: { msg: "Title is required" },
+          notEmpty: { msg: "Title cannot be empty" },
+          len: {
+            args: [1, 255],
+            msg: "Title must be between 1 and 255 characters",
+          },
         },
       },
       content: {
@@ -150,95 +126,114 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.TEXT,
         allowNull: true,
         validate: {
-          len: [0, 1000],
+          len: {
+            args: [0, 2000],
+            msg: "Synopsis cannot exceed 2000 characters",
+          },
         },
       },
       genre: {
         type: DataTypes.STRING,
         allowNull: true,
+        validate: {
+          len: {
+            args: [0, 100],
+            msg: "Genre cannot exceed 100 characters",
+          },
+        },
       },
       status: {
         type: DataTypes.ENUM(
           "DRAFT",
-          "UNDER_REVIEW",
+          "IN_REVIEW",
           "APPROVED",
           "PUBLISHED",
           "REJECTED"
         ),
+        allowNull: false,
         defaultValue: "DRAFT",
       },
-      cover_url: {
+      coverUrl: {
         type: DataTypes.STRING,
         allowNull: true,
         validate: {
-          isUrl: true,
+          isUrl: { msg: "Cover URL must be a valid URL" },
         },
       },
-      certificate_url: {
+      certificateUrl: {
         type: DataTypes.STRING,
         allowNull: true,
         validate: {
-          isUrl: true,
+          isUrl: { msg: "Certificate URL must be a valid URL" },
         },
       },
       isbn: {
         type: DataTypes.STRING,
         allowNull: true,
         unique: true,
+        validate: {
+          len: {
+            args: [10, 17],
+            msg: "ISBN must be between 10 and 17 characters",
+          },
+        },
       },
       price: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: true,
         validate: {
-          min: 0,
-          max: 9999.99,
+          min: { args: [0], msg: "Price must be non-negative" },
         },
       },
-      publishing_method: {
-        type: DataTypes.ENUM("TRADITIONAL", "SELF_PUBLISH", "DIGITAL"),
+      publishingMethod: {
+        type: DataTypes.ENUM("TRADITIONAL", "SELF_PUBLISHED", "DIGITAL"),
+        allowNull: true,
         defaultValue: "DIGITAL",
       },
-      published_at: {
+      publishedAt: {
         type: DataTypes.DATE,
         allowNull: true,
       },
-      // Add missing ISBN-related fields
-      isbn_assigned: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-        comment: "Whether an ISBN has been assigned to this book",
-      },
-      current_isbn: {
-        type: DataTypes.STRING(17),
+      averageRating: {
+        type: DataTypes.DECIMAL(3, 2),
         allowNull: true,
-        comment: "Current active ISBN for the book (ISBN-13 format)",
+        defaultValue: 0,
+        validate: {
+          min: { args: [0], msg: "Average rating must be non-negative" },
+          max: { args: [5], msg: "Average rating cannot exceed 5" },
+        },
       },
-      isbn_status: {
-        type: DataTypes.ENUM(
-          "NOT_REQUESTED",
-          "REQUESTED",
-          "ASSIGNED",
-          "VERIFIED",
-          "PUBLISHED"
-        ),
+      totalReviews: {
+        type: DataTypes.INTEGER,
         allowNull: false,
-        defaultValue: "NOT_REQUESTED",
-        comment: "Current status of ISBN for this book",
+        defaultValue: 0,
+        validate: {
+          min: { args: [0], msg: "Total reviews must be non-negative" },
+        },
       },
-      requires_isbn: {
-        type: DataTypes.BOOLEAN,
+      totalSales: {
+        type: DataTypes.INTEGER,
         allowNull: false,
-        defaultValue: true,
-        comment: "Whether this book requires an ISBN for publication",
+        defaultValue: 0,
+        validate: {
+          min: { args: [0], msg: "Total sales must be non-negative" },
+        },
       },
     },
     {
       sequelize,
       modelName: "Book",
-      tableName: "books",
-      underscored: true,
+      tableName: "Books",
       timestamps: true,
+      indexes: [
+        { fields: ["authorId"] },
+        { fields: ["status"] },
+        { fields: ["genre"] },
+        { fields: ["publishedAt"] },
+        { fields: ["isbn"], unique: true },
+        { fields: ["averageRating"] },
+        { fields: ["totalSales"] },
+      ],
     }
   );
 

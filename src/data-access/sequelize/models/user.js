@@ -4,92 +4,85 @@ const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class User extends Model {
     static associate(models) {
-      // User has many books as author
-      User.hasMany(models.Book, {
-        foreignKey: "author_id",
-        as: "authored_books",
-      });
+      // User can create many books as author
+      if (models.Book) {
+        User.hasMany(models.Book, {
+          foreignKey: "authorId",
+          as: "authoredBooks",
+        });
+      }
 
-      // User has many reviews
-      User.hasMany(models.Review, {
-        foreignKey: "user_id",
-        as: "reviews",
-      });
+      // User can create many cover designs as designer
+      if (models.CoverDesign) {
+        User.hasMany(models.CoverDesign, {
+          foreignKey: "designerId",
+          as: "designedCovers",
+        });
+      }
 
-      // User has many payment records
-      User.hasMany(models.PaymentRecord, {
-        foreignKey: "user_id",
-        as: "payments",
-      });
+      // User can upload many cover designs
+      if (models.CoverDesign) {
+        User.hasMany(models.CoverDesign, {
+          foreignKey: "uploadedBy",
+          as: "uploadedCoverDesigns",
+        });
 
-      // User has many uploaded book files
-      User.hasMany(models.BookFile, {
-        foreignKey: "uploaded_by",
-        as: "uploaded_files",
-      });
+        // User can approve many cover designs
+        User.hasMany(models.CoverDesign, {
+          foreignKey: "approvedBy",
+          as: "approvedCoverDesigns",
+        });
+      }
 
-      // User has many uploaded ISBN certificates
-      User.hasMany(models.ISBNCertificate, {
-        foreignKey: "uploaded_by",
-        as: "uploaded_certificates",
-      });
+      // User can write many reviews
+      if (models.Review) {
+        User.hasMany(models.Review, {
+          foreignKey: "userId",
+          as: "reviews",
+        });
+      }
 
-      // User has many verified ISBN certificates
-      User.hasMany(models.ISBNCertificate, {
-        foreignKey: "verified_by",
-        as: "verified_certificates",
-      });
-
-      // User has many audit log actions
-      User.hasMany(models.ISBNAuditLog, {
-        foreignKey: "performed_by",
-        as: "audit_actions",
-      });
+      // User can make many payments
+      if (models.PaymentRecord) {
+        User.hasMany(models.PaymentRecord, {
+          foreignKey: "userId",
+          as: "payments",
+        });
+      }
     }
 
     // Instance methods
+    getPublicInfo() {
+      return {
+        id: this.id,
+        username: this.username,
+        email: this.email,
+        firstName: this.firstName,
+        lastName: this.lastName,
+        role: this.role,
+        isActive: this.isActive,
+        createdAt: this.createdAt,
+      };
+    }
+
+    getFullName() {
+      return `${this.firstName} ${this.lastName}`.trim();
+    }
+
     isAuthor() {
       return this.role === "AUTHOR";
     }
 
-    isReviewer() {
-      return this.role === "REVIEWER";
+    isDesigner() {
+      return this.role === "DESIGNER";
     }
 
     isAdmin() {
       return this.role === "ADMIN";
     }
 
-    canPublish() {
-      return ["AUTHOR", "ADMIN", "PUBLISHER"].includes(this.role);
-    }
-
-    canReview() {
-      return ["REVIEWER", "ADMIN"].includes(this.role);
-    }
-
-    canVerifyISBN() {
-      return ["ADMIN"].includes(this.role);
-    }
-
-    getFullName() {
-      return (
-        `${this.first_name || ""} ${this.last_name || ""}`.trim() ||
-        this.username
-      );
-    }
-
-    toPublicJSON() {
-      return {
-        id: this.id,
-        username: this.username,
-        first_name: this.first_name,
-        last_name: this.last_name,
-        role: this.role,
-        profile_image_url: this.profile_image_url,
-        bio: this.bio,
-        created_at: this.created_at,
-      };
+    canApproveCovers() {
+      return ["ADMIN", "PUBLISHER", "EDITOR"].includes(this.role);
     }
   }
 
@@ -100,72 +93,94 @@ module.exports = (sequelize, DataTypes) => {
         primaryKey: true,
         autoIncrement: true,
       },
-      external_user_id: {
+      username: {
         type: DataTypes.STRING,
         allowNull: false,
         unique: true,
+        validate: {
+          notNull: { msg: "Username is required" },
+          notEmpty: { msg: "Username cannot be empty" },
+          len: {
+            args: [3, 50],
+            msg: "Username must be between 3 and 50 characters",
+          },
+        },
       },
       email: {
         type: DataTypes.STRING,
         allowNull: false,
         unique: true,
         validate: {
-          isEmail: true,
+          notNull: { msg: "Email is required" },
+          isEmail: { msg: "Must be a valid email address" },
         },
       },
-      username: {
+      firstName: {
         type: DataTypes.STRING,
         allowNull: false,
-        unique: true,
         validate: {
-          len: [3, 50],
+          notNull: { msg: "First name is required" },
+          notEmpty: { msg: "First name cannot be empty" },
+          len: {
+            args: [1, 50],
+            msg: "First name must be between 1 and 50 characters",
+          },
         },
       },
-      first_name: {
+      lastName: {
         type: DataTypes.STRING,
-        allowNull: true,
+        allowNull: false,
         validate: {
-          len: [1, 100],
-        },
-      },
-      last_name: {
-        type: DataTypes.STRING,
-        allowNull: true,
-        validate: {
-          len: [1, 100],
+          notNull: { msg: "Last name is required" },
+          notEmpty: { msg: "Last name cannot be empty" },
+          len: {
+            args: [1, 50],
+            msg: "Last name must be between 1 and 50 characters",
+          },
         },
       },
       role: {
         type: DataTypes.ENUM(
-          "AUTHOR",
-          "REVIEWER",
-          "ADMIN",
           "READER",
-          "PUBLISHER"
+          "AUTHOR",
+          "DESIGNER",
+          "EDITOR",
+          "PUBLISHER",
+          "ADMIN"
         ),
         allowNull: false,
         defaultValue: "READER",
       },
-      is_active: {
+      isActive: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true,
       },
-      profile_image_url: {
+      profileImage: {
         type: DataTypes.STRING,
         allowNull: true,
         validate: {
-          isUrl: true,
+          isUrl: { msg: "Profile image must be a valid URL" },
         },
       },
       bio: {
         type: DataTypes.TEXT,
         allowNull: true,
         validate: {
-          len: [0, 1000],
+          len: {
+            args: [0, 1000],
+            msg: "Bio cannot exceed 1000 characters",
+          },
         },
       },
-      last_login_at: {
+      website: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        validate: {
+          isUrl: { msg: "Website must be a valid URL" },
+        },
+      },
+      lastLoginAt: {
         type: DataTypes.DATE,
         allowNull: true,
       },
@@ -173,9 +188,14 @@ module.exports = (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "User",
-      tableName: "users",
-      underscored: true,
+      tableName: "Users",
       timestamps: true,
+      indexes: [
+        { fields: ["email"], unique: true },
+        { fields: ["username"], unique: true },
+        { fields: ["role"] },
+        { fields: ["isActive"] },
+      ],
     }
   );
 

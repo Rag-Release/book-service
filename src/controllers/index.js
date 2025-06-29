@@ -5,6 +5,8 @@ const BookController = require("./book.controller");
 const ReviewController = require("./review.controller");
 const OrderController = require("./order.controller");
 const IsbnCertificateController = require("./isbnCertificate.controller");
+const CoverDesignController = require("./coverDesign.controller");
+const CoverDesignRequestController = require("./coverDesignRequest.controller");
 
 module.exports = {
   BaseController,
@@ -12,4 +14,6 @@ module.exports = {
   ReviewController,
   OrderController,
   IsbnCertificateController,
+  CoverDesignController,
+  CoverDesignRequestController,
 };
